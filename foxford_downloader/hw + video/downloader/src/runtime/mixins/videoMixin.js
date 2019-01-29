@@ -2,14 +2,12 @@ import path from "path";
 import glob from "glob";
 import child_process from "child_process";
 import waitPort from "wait-port";
-import whenDomReady from "when-dom-ready";
 import sanitize from "sanitize-filename";
 
 import helpers from "../helpers";
 
 class VideoMixin {
   constructor() {
-    this.accessToken = null;
     this.videoList = [];
   }
 
@@ -27,47 +25,52 @@ class VideoMixin {
 
       let webinar_id = json.webinar_id;
 
-      if (json.access_state === "available") {
-        this.foxFrame.contentWindow.location.href = `https://foxford.ru/groups/${webinar_id}`;
+      let webinarSource = await fetch(
+        `https://foxford.ru/groups/${webinar_id}`
+      ).then(r => r.text());
 
-        await whenDomReady(this.foxFrame.contentWindow.document);
+      let webinarDOM = new DOMParser().parseFromString(
+        webinarSource,
+        "text/html"
+      );
 
-        let erlyFrame = await helpers.waitFor(() =>
-          this.foxFrame.contentWindow.document.querySelector(
-            "div.full_screen > iframe"
-          )
+      let erlyFrame = webinarDOM.querySelector("div.full_screen > iframe");
+
+      this.foxFrame.contentWindow.location.href = erlyFrame.src;
+
+      await helpers.waitFor(() =>
+        this.foxFrame.contentWindow.document.querySelector("video")
+      );
+
+      let videoLink;
+
+      try {
+        let videoEl = this.foxFrame.contentWindow.document.querySelector(
+          "#integros_player > div > div > video"
         );
 
-        await whenDomReady(erlyFrame.contentWindow.document);
-
-        if (lesson.type === "intro") {
-          this.accessToken = new URL(erlyFrame.src).searchParams.get(
-            "access_token"
-          );
+        if (videoEl) {
+          videoLink = videoEl.dataset.originalSrc;
+        } else {
+          throw new Error("Next player type");
         }
-
-        let videoEl = await helpers.waitFor(() =>
-          erlyFrame.contentWindow.document.querySelector(
-            "video.video-react-video > source"
-          )
+      } catch (e) {
+        let videoEl = this.foxFrame.contentWindow.document.querySelector(
+          "video.video-react-video > source"
         );
 
-        this.videoList.push({
-          url: videoEl.src,
-          lessonId: id,
-          fname: sanitize(`${lesson.title || webinar_id}.mp4`)
-        });
-      } else {
-        let video_id = webinar_id + 12000;
-
-        this.videoList.push({
-          url: `https://storage.netology-group.services/api/v1/buckets/hls.webinar.foxford.ru/sets/${video_id}/objects/master.m3u8?access_token=${
-            this.accessToken
-          }`,
-          lessonId: id,
-          fname: sanitize(`${lesson.title || webinar_id}.mp4`)
-        });
+        if (videoEl) {
+          videoLink = videoEl.src;
+        } else {
+          throw new Error("Unknown player type");
+        }
       }
+
+      this.videoList.push({
+        url: videoLink,
+        lessonId: id,
+        fname: sanitize(`${lesson.title || webinar_id}.mp4`)
+      });
     }
   }
 
@@ -75,16 +78,6 @@ class VideoMixin {
     let downloadTasks = [];
 
     for (let video of this.videoList) {
-      try {
-        let response = await fetch(video.url);
-
-        if (!response.ok) {
-          throw new Error("Video unavaliable");
-        }
-      } catch (e) {
-        continue;
-      }
-
       downloadTasks.push({
         title: video.fname,
         task: `

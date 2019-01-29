@@ -410,13 +410,7 @@ https://mega.nz/#F!VdMS1QTL!UzidAXtwhfSPXDC8YoUDAQ
 
 ---
 
-[**Способы извлечения данных**](https://github.com/limitedeternity/foxford_courses/tree/master/foxford_downloader/video)
-
----
-
-**Foxford-бот в Telegram (Курсы < 2015 г.):**
-
-http://telegram.me/foxford_bot
+[**Способы извлечения данных**](https://github.com/limitedeternity/foxford_courses/tree/master/foxford_downloader/hw%20%2B%20video)
 
 ---
 

@@ -30,21 +30,24 @@ class HomeworkMixin {
       let taskId = task.id;
       let lessonId = task.lessonId;
 
-      let response;
+      let json = await fetch(
+        `https://foxford.ru/api/lessons/${lessonId}/tasks/${taskId}`
+      ).then(r => r.json());
 
-      try {
-        response = await fetch(
-          `https://foxford.ru/api/lessons/${lessonId}/tasks/${taskId}`
-        );
-
-        if (!response.ok) {
-          throw new Error("Homework unavaliable");
-        }
-      } catch (e) {
-        break;
+      if (
+        fs.existsSync(
+          path.join(
+            nw.App.startPath,
+            "output",
+            String(this.courseId),
+            String(lessonId),
+            "homework",
+            `${json.name}0.pdf`
+          )
+        )
+      ) {
+        continue;
       }
-
-      let json = await response.json();
 
       this.foxFrame.contentWindow.location.href = `https://foxford.ru/lessons/${lessonId}/tasks/${taskId}`;
       await whenDomReady(this.foxFrame.contentWindow.document);
@@ -74,30 +77,42 @@ class HomeworkMixin {
         this.foxFrame.contentWindow.MathJax.Hub.Queue(resolve);
       });
 
-      let pdf_path = path.join(
-        nw.App.startPath,
-        "output",
-        String(this.courseId),
-        String(lessonId),
-        "homework",
-        `${json.name}.pdf`
-      );
+      let contentHeight = this.foxFrame.contentWindow.document.body
+        .scrollHeight;
 
-      fs.ensureFileSync(pdf_path);
+      nw.Window.get().resizeTo(1200, contentHeight);
 
-      nw.Window.get().print({
-        pdf_path,
-        marginsType: 1,
-        mediaSize: {
-          name: "iPad",
-          width_microns: 270929,
-          height_microns: 361416,
-          custom_display_name: "A4",
-          is_default: true
-        },
-        headerFooterEnabled: false,
-        shouldPrintBackgrounds: true
-      });
+      let i = 0;
+      do {
+        let pdf_path = path.join(
+          nw.App.startPath,
+          "output",
+          String(this.courseId),
+          String(lessonId),
+          "homework",
+          `${json.name}${i}.pdf`
+        );
+
+        fs.ensureFileSync(pdf_path);
+
+        nw.Window.get().print({
+          pdf_path,
+          marginsType: 1,
+          mediaSize: {
+            name: "iPad",
+            width_microns: 1200 * 263.6,
+            height_microns: 1080 * 263.6,
+            custom_display_name: "A4",
+            is_default: true
+          },
+          headerFooterEnabled: false,
+          shouldPrintBackgrounds: true
+        });
+
+        this.foxFrame.contentWindow.scrollBy(0, 1080);
+        contentHeight -= 1080;
+        i++;
+      } while (contentHeight > 0);
     }
   }
 }

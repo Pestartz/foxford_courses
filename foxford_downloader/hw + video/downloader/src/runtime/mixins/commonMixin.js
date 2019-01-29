@@ -20,7 +20,7 @@ class CommonMixin {
         }/lessons?before=${cursorBefore}`
       ).then(r => r.json());
 
-      this.lessonList = [...this.lessonList, ...json.lessons];
+      this.lessonList = [...json.lessons, ...this.lessonList];
       cursorBefore = json.cursors.before;
     }
 
@@ -34,6 +34,10 @@ class CommonMixin {
       this.lessonList = [...this.lessonList, ...json.lessons];
       cursorAfter = json.cursors.after;
     }
+
+    this.lessonList = this.lessonList.filter(
+      lesson => lesson["timeline_view_state"] === "past" && !lesson["is_locked"]
+    );
   }
 }
 
