@@ -1,7 +1,7 @@
 const path = require("path");
 const fs = require("fs-extra");
-const { Observable } = require("rxjs");
-const UpdaterRenderer = require("listr-update-renderer");
+const Observable = require("zen-observable");
+const VerboseRenderer = require("listr-verbose-renderer");
 const Listr = require("listr");
 const ffbinaries = require("ffbinaries");
 const ffmpeg = require("fluent-ffmpeg");
@@ -61,7 +61,7 @@ function processTasks(data) {
       }
     ],
     {
-      renderer: UpdaterRenderer
+      renderer: VerboseRenderer
     }
   ).run();
 }

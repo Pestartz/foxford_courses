@@ -25,10 +25,16 @@ class FoxfordRetrieverBase {
     this.infoEl.style.display = "block";
 
     await this.createVideoList();
-    let downloadTasks = await this.createDownloadTasksList();
+    await this.createDownloadTasksList();
 
-    nw.Window.get().hide();
-    await this.delegateDownloadTasks(downloadTasks);
+    this.foxFrame.src = "about:blank";
+    this.foxFrame.style.display = "none";
+    this.infoEl.style.display = "none";
+
+    window.xterm.open(window.top.document.getElementById("terminal"));
+    window.xterm.toggleFullScreen();
+
+    await this.runDownloadTasks();
   }
 }
 

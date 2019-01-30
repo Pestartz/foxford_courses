@@ -11,9 +11,9 @@
     "fluent-ffmpeg": "^2.1.2",
     "fs-extra": "^7.0.1",
     "listr": "^0.14.3",
-    "listr-update-renderer": "^0.5.0",
+    "listr-verbose-renderer": "^0.5.0",
     "micro": "^9.3.3",
     "pkg": "^4.3.7",
-    "rxjs": "^6.3.3"
+    "zen-observable": "^0.8.13"
   }
 }

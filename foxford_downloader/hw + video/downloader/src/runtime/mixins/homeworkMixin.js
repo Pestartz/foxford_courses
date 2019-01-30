@@ -1,6 +1,5 @@
 import path from "path";
 import fs from "fs-extra";
-import whenDomReady from "when-dom-ready";
 import helpers from "../helpers";
 
 class HomeworkMixin {
@@ -50,7 +49,7 @@ class HomeworkMixin {
       }
 
       this.foxFrame.contentWindow.location.href = `https://foxford.ru/lessons/${lessonId}/tasks/${taskId}`;
-      await whenDomReady(this.foxFrame.contentWindow.document);
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       try {
         let response = await fetch(
@@ -68,13 +67,20 @@ class HomeworkMixin {
 
         if (response.ok) {
           this.foxFrame.contentWindow.location.href = `https://foxford.ru/lessons/${lessonId}/tasks/${taskId}?reload=true`;
-          await whenDomReady(this.foxFrame.contentWindow.document);
         }
       } catch (e) {}
 
-      await new Promise(resolve => setTimeout(resolve, 5500));
+      await helpers.waitFor(() =>
+        this.foxFrame.contentWindow.document.querySelector("#taskContent")
+      );
+
+      await new Promise(resolve => setTimeout(resolve, 3500));
+
       await new Promise(resolve => {
-        this.foxFrame.contentWindow.MathJax.Hub.Queue(resolve);
+        this.foxFrame.contentWindow.MathJax.Hub.Register.StartupHook(
+          "End",
+          resolve
+        );
       });
 
       let contentHeight = this.foxFrame.contentWindow.document.body

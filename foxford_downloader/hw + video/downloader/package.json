@@ -10,7 +10,7 @@
     "react-dom": "^16.7.0",
     "sanitize-filename": "^1.6.1",
     "wait-port": "^0.2.2",
-    "when-dom-ready": "^1.2.12"
+    "xterm": "^3.10.1"
   },
   "scripts": {
     "start": "nw-react-scripts start",

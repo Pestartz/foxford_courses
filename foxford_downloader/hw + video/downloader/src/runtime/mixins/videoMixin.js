@@ -9,6 +9,7 @@ import helpers from "../helpers";
 class VideoMixin {
   constructor() {
     this.videoList = [];
+    this.downloadTasks = [];
   }
 
   async createVideoList() {
@@ -75,10 +76,8 @@ class VideoMixin {
   }
 
   async createDownloadTasksList() {
-    let downloadTasks = [];
-
     for (let video of this.videoList) {
-      downloadTasks.push({
+      this.downloadTasks.push({
         title: video.fname,
         task: `
         () => {
@@ -105,7 +104,9 @@ class VideoMixin {
 
               command.on("progress", progress =>
                 taskObserver.next(
-                  \`\${progress.timemark} [\${progress.currentKbps} kbps]\`
+                  \`${
+                    video.lessonId
+                  }: \${progress.timemark} [\${progress.currentKbps} kbps]\`
                 )
               );
 
@@ -123,56 +124,31 @@ class VideoMixin {
         }`
       });
     }
-
-    return downloadTasks;
   }
 
-  async delegateDownloadTasks(downloadTasks) {
-    let taskServer = glob.sync(path.join(nw.App.startPath, "task-server*"))[0];
+  async runDownloadTasks() {
+    await new Promise(async resolve => {
+      let taskServer = glob.sync(
+        path.join(nw.App.startPath, "task-server*")
+      )[0];
 
-    switch (process.platform) {
-      case "win32":
-        child_process
-          .spawn("start", ["cmd", "/k", `"${taskServer}"`], {
-            detached: true,
-            stdio: "ignore"
-          })
-          .unref();
+      let downloaderSlave = child_process.spawn(`${taskServer}`);
 
-        break;
+      downloaderSlave.stdout.on("data", data => {
+        window.xterm.writeln(data.toString());
+      });
 
-      case "linux":
-        child_process
-          .spawn("xterm", ["-e", `"${taskServer}"`], {
-            detached: true,
-            stdio: "ignore"
-          })
-          .unref();
+      downloaderSlave.on("exit", resolve);
 
-        break;
+      await waitPort({ host: "localhost", port: 3001 });
 
-      case "darwin":
-        child_process
-          .spawn("open", ["-a", "Terminal.app", `"${taskServer}"`], {
-            detached: true,
-            stdio: "ignore"
-          })
-          .unref();
-
-        break;
-
-      default:
-        break;
-    }
-
-    await waitPort({ host: "localhost", port: 3001 });
-
-    await fetch("http://localhost:3001/", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(downloadTasks)
+      await fetch("http://localhost:3001/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(this.downloadTasks)
+      });
     });
   }
 }
